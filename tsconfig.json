@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+      "baseUrl": "./src",
+      "target": "ESNext",
+      "module": "NodeNext",
+      "outDir": "./dist",
+      "esModuleInterop": true,
+      "strict": true,
+      "forceConsistentCasingInFileNames": true,
+      "allowSyntheticDefaultImports": true,
+      "moduleResolution": "NodeNext",
+      "alwaysStrict": true,
+      "experimentalDecorators": true,
+      "sourceMap": true,
+      "skipLibCheck": true,
+      "allowJs": true,
+      "types": ["node"],
+      "typeRoots": ["./node_modules/@types"],
+      "removeComments": true
+  },
+  "ts-node": {
+      "files": true,
+      "transpileOnly": true
+  },
+  "include": ["src/**/*"],
+  // "files": ["src/types/index.d.ts"]
+}

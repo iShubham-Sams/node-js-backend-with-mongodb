@@ -23,5 +23,4 @@
       "transpileOnly": true
   },
   "include": ["src/**/*"],
-  // "files": ["src/types/index.d.ts"]
 }

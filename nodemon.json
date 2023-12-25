@@ -1,0 +1,16 @@
+{
+    "watch": [
+        "src"
+    ],
+    "ignore": [
+        "src/**/*.test.ts",
+        "node_modules"
+    ],
+    "execMap": {
+        "js": "node -r dotenv/config --experimental-json-modules",
+        "mjs": "node -r dotenv/config --experimental-json-modules"
+      },
+    "ext": "ts,mjs,js,json",
+    "exec": "tsc && node ./dist/index.js",
+    "legacyWatch": true
+}

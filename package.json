@@ -3,7 +3,8 @@
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
-    "express": "^4.18.2"
+    "express": "^4.18.2",
+    "mongoose": "^8.0.3"
   },
   "devDependencies": {
     "@types/cookie-parser": "^1.4.6",
@@ -20,10 +21,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "npx tsc",
-    "start": "node dist/app.mjs",
-    "dev": "npx tsc -w & nodemon dist/index.js"
+    "dev":"nodemon"
   },
   "keywords": [],
   "author": "",

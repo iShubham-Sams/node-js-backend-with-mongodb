@@ -21,7 +21,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "dev":"nodemon"
+    "dev": "nodemon"
   },
   "keywords": [],
   "author": "",

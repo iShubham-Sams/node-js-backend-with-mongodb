@@ -1,7 +1,9 @@
 import { app } from "./app.js";
 import connectDB from "./db/index.js";
 import { config } from "dotenv";
-config();
+config({
+    path: "./.env",
+});
 connectDB()
     .then(() => {
     app.on("error", (err) => {

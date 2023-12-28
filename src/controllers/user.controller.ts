@@ -1,5 +1,4 @@
 import { Request, Response } from "express";
-import z, { optional } from "zod";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import {
   loginUserZodSchema,
@@ -119,4 +118,29 @@ const loginUser = asyncHandler(async (req: Request, res: Response) => {
     );
 });
 
-export { registerUser, loginUser };
+const logOutUser = asyncHandler(async (req: Request, res: Response) => {
+  await User.findByIdAndUpdate(
+    req.body.user._id,
+    {
+      $set: {
+        refreshToken: undefined,
+      },
+    },
+    {
+      new: true,
+    }
+  );
+
+  const options = {
+    httpOnly: true,
+    secure: true,
+  };
+
+  return res
+    .status(200)
+    .clearCookie("accessToken", options)
+    .clearCookie("refreshToken", options)
+    .json(new ApiResponse(200, {}, "User logged Out"));
+});
+
+export { registerUser, loginUser, logOutUser };

@@ -1,10 +1,31 @@
 import { Request, Response } from "express";
+import z, { optional } from "zod";
 import { asyncHandler } from "../utils/asyncHandler.js";
-import { registerUserZodSchema } from "../zodschema/user.zodSchema.js";
+import {
+  loginUserZodSchema,
+  registerUserZodSchema,
+} from "../zodschema/user.zodSchema.js";
 import { User } from "../models/user.model.js";
 import { ApiError } from "../utils/apiError.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/apiResponse.js";
+
+const generateAccessAndRefreshToken = async (userId: string) => {
+  try {
+    const user = await User.findById(userId);
+    const accessToken = await user.generateAccessToken();
+    const refreshToken = await user.generateRefreshToken();
+    user.refreshToken = refreshToken;
+    await user.save({ validateBeforeSave: false });
+    return { accessToken, refreshToken };
+  } catch (error) {
+    throw new ApiError(
+      "Something went wrong while creating access and refresh token",
+      500,
+      "ServerError"
+    );
+  }
+};
 
 const registerUser = asyncHandler(async (req: Request, res: Response) => {
   const {
@@ -61,4 +82,41 @@ const registerUser = asyncHandler(async (req: Request, res: Response) => {
     .json(new ApiResponse(200, userCreateDone, "User register successfully"));
 });
 
-export { registerUser };
+const loginUser = asyncHandler(async (req: Request, res: Response) => {
+  const {
+    body: { username, password, email },
+  } = await loginUserZodSchema.parseAsync(req);
+  if (!email && !username) {
+    throw new ApiError("User name or Email required", 400, "BadRequest");
+  }
+
+  const user = await User.findOne({ $or: [{ username }, { email }] });
+  if (!user) {
+    throw new ApiError("User does not exist", 404, "NotFound");
+  }
+  const correctPassword = await user.isPasswordCorrect(password);
+  if (!correctPassword) {
+    throw new ApiError("Invalid user credentials", 400, "BadRequest");
+  }
+  const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
+    user._id
+  );
+
+  const cookieOptions = {
+    httpOnly: true,
+    secure: true,
+  };
+  return res
+    .status(200)
+    .cookie("accessToken", accessToken, cookieOptions)
+    .cookie("refreshToken", refreshToken, cookieOptions)
+    .json(
+      new ApiResponse(
+        200,
+        { accessToken, refreshToken },
+        "User login Successfully"
+      )
+    );
+});
+
+export { registerUser, loginUser };

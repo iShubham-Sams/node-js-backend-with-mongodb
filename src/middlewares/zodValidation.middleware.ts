@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { AnyZodObject, z } from "zod";
+import { z } from "zod";
 
 // ...
 

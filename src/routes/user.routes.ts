@@ -1,8 +1,11 @@
 import { upload } from "../middlewares/multer.middleware.js";
 import zodValidate from "../middlewares/zodValidation.middleware.js";
-import { registerUser } from "../controllers/user.controller.js";
+import { loginUser, registerUser } from "../controllers/user.controller.js";
 import { Router } from "express";
-import { registerUserZodSchema } from "../zodschema/user.zodSchema.js";
+import {
+  loginUserZodSchema,
+  registerUserZodSchema,
+} from "../zodschema/user.zodSchema.js";
 
 const router = Router();
 
@@ -14,5 +17,7 @@ router.route("/register").post(
   zodValidate(registerUserZodSchema),
   registerUser
 );
+
+router.route("/login").post(zodValidate(loginUserZodSchema), loginUser);
 
 export default router;

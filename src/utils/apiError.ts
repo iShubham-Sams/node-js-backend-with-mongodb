@@ -14,7 +14,7 @@ class ApiError extends Error {
   }
 
   static Conflict(message: string) {
-    return new ApiError(message, HttpStatusCode.CONFLICT, "APIError::Conflict");
+    return new ApiError(message, HttpStatusCode.CONFLICT, "Conflict");
   }
 
   static BadRequest(message: string) {

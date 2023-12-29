@@ -3,6 +3,7 @@ import zodValidate from "../middlewares/zodValidation.middleware.js";
 import {
   logOutUser,
   loginUser,
+  refreshAccessToken,
   registerUser,
 } from "../controllers/user.controller.js";
 import { Router } from "express";
@@ -26,5 +27,6 @@ router.route("/register").post(
 router.route("/login").post(zodValidate(loginUserZodSchema), loginUser);
 
 router.route("/logout").post(verifyJwt, logOutUser);
+router.route("/refresh-token").post(refreshAccessToken);
 
 export default router;

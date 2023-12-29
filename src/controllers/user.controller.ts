@@ -1,4 +1,9 @@
+import jwt from "jsonwebtoken";
 import { Request, Response } from "express";
+import { config } from "dotenv";
+config({
+  path: "./.env",
+});
 import { asyncHandler } from "../utils/asyncHandler.js";
 import {
   loginUserZodSchema,
@@ -143,4 +148,51 @@ const logOutUser = asyncHandler(async (req: Request, res: Response) => {
     .json(new ApiResponse(200, {}, "User logged Out"));
 });
 
-export { registerUser, loginUser, logOutUser };
+const refreshAccessToken = asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const incomingRefreshToken =
+      req.cookies.refreshToken || req.body.refreshToken;
+
+    if (!incomingRefreshToken) {
+      throw ApiError.Unauthorized();
+    }
+
+    const decodedToken = jwt.verify(
+      incomingRefreshToken,
+      process.env.REFRESH_TOKEN_SECRET!
+    ) as jwt.JwtPayload;
+    const user = await User.findById(decodedToken?._id);
+    if (!user) {
+      throw ApiError.Unauthorized("Invalid refresh token");
+    }
+    if (incomingRefreshToken !== user.refreshToken) {
+      throw ApiError.Unauthorized("Refresh token expired");
+    }
+    const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
+      user._id
+    );
+    const options = {
+      httpOnly: true,
+      secure: true,
+    };
+
+    return res
+      .status(200)
+      .cookie("accessToken", accessToken, options)
+      .cookie("refreshToken", refreshToken, options)
+      .json(
+        new ApiResponse(
+          200,
+          {
+            accessToken,
+            refreshToken,
+          },
+          "Access token refreshed"
+        )
+      );
+  } catch (error) {
+    throw ApiError.Unauthorized();
+  }
+});
+
+export { registerUser, loginUser, logOutUser, refreshAccessToken };

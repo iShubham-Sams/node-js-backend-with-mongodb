@@ -44,3 +44,39 @@ export const loginUserZodSchema = z.object({
     }),
   }),
 });
+
+export const changeUserPasswordZodSchema = z.object({
+  body: z
+    .object({
+      oldPassword: z.string({
+        required_error: "Old password required",
+        invalid_type_error: "Old password must be a string",
+      }),
+      newPassword: z.string({
+        required_error: "New password required",
+        invalid_type_error: "New password must be a string",
+      }),
+      confirmNewPassword: z.string({
+        required_error: "Confirm password required",
+        invalid_type_error: "New password must be a string",
+      }),
+    })
+    .refine((val) => val.newPassword == val.confirmNewPassword, {
+      message: "New password and Confirm password not same",
+    }),
+});
+
+export const updateAccountDetailsZodSchema = z.object({
+  body: z.object({
+    fullName: z.string({
+      required_error: "Full name is required",
+      invalid_type_error: "Full name must be a string",
+    }),
+    email: z
+      .string({
+        required_error: "Email is required",
+        invalid_type_error: "Please send valid email",
+      })
+      .email(),
+  }),
+});

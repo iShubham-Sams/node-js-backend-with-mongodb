@@ -6,8 +6,10 @@ config({
 });
 import { asyncHandler } from "../utils/asyncHandler.js";
 import {
+  changeUserPasswordZodSchema,
   loginUserZodSchema,
   registerUserZodSchema,
+  updateAccountDetailsZodSchema,
 } from "../zodschema/user.zodSchema.js";
 import { User } from "../models/user.model.js";
 import { ApiError } from "../utils/apiError.js";
@@ -195,4 +197,107 @@ const refreshAccessToken = asyncHandler(async (req: Request, res: Response) => {
   }
 });
 
-export { registerUser, loginUser, logOutUser, refreshAccessToken };
+const changeUserPassword = asyncHandler(async (req, res) => {
+  const {
+    body: { oldPassword, newPassword },
+  } = await changeUserPasswordZodSchema.parseAsync(req);
+  const user = await User.findById(req.body.user._id);
+  const isPasswordCorrect = await user.isPasswordCorrect(oldPassword);
+  if (!isPasswordCorrect) {
+    throw new ApiError("Invalid old password", 400, "Invalid");
+  }
+  user.password = newPassword;
+  await user.save({ validateBeforeSave: false });
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Password Changed successfully"));
+});
+
+const getCurrentUser = asyncHandler(async (req: Request, res: Response) => {
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, req.body.user, "Current user fetch successfully")
+    );
+});
+
+const updateAccountDetails = asyncHandler(
+  async (req: Request, res: Response) => {
+    const {
+      body: { email, fullName },
+    } = await updateAccountDetailsZodSchema.parseAsync(req);
+    const updatedUser = await User.findByIdAndUpdate(
+      req.body.user._id,
+      { $set: { fullName, email } },
+      { new: true }
+    ).select("-password -refreshToken");
+    return res
+      .status(200)
+      .json(new ApiResponse(200, updatedUser, "User update successfully"));
+  }
+);
+
+const updateUserAvatar = asyncHandler(async (req: Request, res: Response) => {
+  const avatarLocalPath = req.file?.path;
+  if (!avatarLocalPath) {
+    throw new ApiError("Avatar file missing", 400, "Bad request");
+  }
+  const avatar = await uploadOnCloudinary(avatarLocalPath);
+
+  if (!avatar?.url) {
+    throw new ApiError("Error while uploading Avatar", 400, "Bad request");
+  }
+
+  const updatedUser = await User.findOneAndUpdate(
+    req.body.user_id,
+    {
+      $set: {
+        avatar: avatar.url,
+      },
+    },
+    { new: true }
+  ).select("-password -refreshToken");
+  return res
+    .status(200)
+    .json(new ApiResponse(200, updatedUser, "User update successfully"));
+});
+
+const updateUserCoverImage = asyncHandler(
+  async (req: Request, res: Response) => {
+    const coverImageLocalPath = req.file?.path;
+    if (!coverImageLocalPath) {
+      throw new ApiError("Cover file missing", 400, "Bad request");
+    }
+    const cover = await uploadOnCloudinary(coverImageLocalPath);
+
+    if (!cover?.url) {
+      throw new ApiError("Error while uploading Cover", 400, "Bad request");
+    }
+
+    const updatedUser = await User.findOneAndUpdate(
+      req.body.user_id,
+      {
+        $set: {
+          coverImage: cover.url,
+        },
+      },
+      { new: true }
+    ).select("-password -refreshToken");
+    return res
+      .status(200)
+      .json(new ApiResponse(200, updatedUser, "User update successfully"));
+  }
+);
+
+export {
+  registerUser,
+  loginUser,
+  logOutUser,
+  refreshAccessToken,
+  changeUserPassword,
+  getCurrentUser,
+  updateAccountDetails,
+  updateUserAvatar,
+  updateUserCoverImage,
+};

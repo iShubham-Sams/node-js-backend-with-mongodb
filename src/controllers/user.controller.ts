@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import { v2 as cloudinary } from "cloudinary";
 import { Request, Response } from "express";
 import { config } from "dotenv";
 config({
@@ -7,6 +8,7 @@ config({
 import { asyncHandler } from "../utils/asyncHandler.js";
 import {
   changeUserPasswordZodSchema,
+  getUserProfileChannelZodSchema,
   loginUserZodSchema,
   registerUserZodSchema,
   updateAccountDetailsZodSchema,
@@ -274,9 +276,11 @@ const updateUserCoverImage = asyncHandler(
     if (!cover?.url) {
       throw new ApiError("Error while uploading Cover", 400, "Bad request");
     }
-
+    const oldCoverImage = req.body.user.coverImage;
+    const deleteOldCover = await cloudinary.uploader.destroy(oldCoverImage);
+    console.log(deleteOldCover, "deleteOldCover");
     const updatedUser = await User.findOneAndUpdate(
-      req.body.user_id,
+      req.body.user._id,
       {
         $set: {
           coverImage: cover.url,
@@ -290,6 +294,76 @@ const updateUserCoverImage = asyncHandler(
   }
 );
 
+const getUserChannelProfile = asyncHandler(
+  async (req: Request, res: Response) => {
+    const {
+      params: { username },
+    } = await getUserProfileChannelZodSchema.parseAsync(req);
+
+    const channel = await User.aggregate([
+      {
+        $match: {
+          username: username?.toLocaleLowerCase(),
+        },
+      },
+      {
+        $lookup: {
+          from: "subscriptions",
+          foreignField: "channel",
+          localField: "_id",
+          as: "subscribers",
+        },
+      },
+      {
+        $lookup: {
+          from: "subscriptions",
+          foreignField: "subscriber",
+          localField: "_id",
+          as: "subscribedTo",
+        },
+      },
+      {
+        $addFields: {
+          subscriberCount: {
+            $size: "$subscribers",
+          },
+          channelSubscribedToCount: {
+            $size: "$subscribedTo",
+          },
+          isSubscribed: {
+            $cond: {
+              if: { $in: [req.body.user?._id, "$subscribers.channel"] },
+              then: true,
+              else: false,
+            },
+          },
+        },
+      },
+      {
+        $project: {
+          fullName: 1,
+          username: 1,
+          subscriberCount: 1,
+          channelSubscribedToCount: 1,
+          isSubscribed: 1,
+          avatar: 1,
+          coverImage: 1,
+          email: 1,
+        },
+      },
+    ]);
+    if (!channel.length) {
+      throw new ApiError("Channel does not exist", 400, "Bad Request");
+    }
+
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(200, channel[0], "User channel fetched successfully")
+      );
+  }
+);
+
 export {
   registerUser,
   loginUser,
@@ -300,4 +374,5 @@ export {
   updateAccountDetails,
   updateUserAvatar,
   updateUserCoverImage,
+  getUserChannelProfile,
 };

@@ -80,3 +80,12 @@ export const updateAccountDetailsZodSchema = z.object({
       .email(),
   }),
 });
+
+export const getUserProfileChannelZodSchema = z.object({
+  params: z.object({
+    username: z.string({
+      required_error: "User name is required",
+      invalid_type_error: "User name must be a string",
+    }),
+  }),
+});

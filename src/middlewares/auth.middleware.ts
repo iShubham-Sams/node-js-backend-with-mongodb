@@ -4,12 +4,13 @@ import { ApiError } from "../utils/apiError.js";
 import jwt from "jsonwebtoken";
 import { config } from "dotenv";
 import { User } from "../models/user.model.js";
+import { CustomRequest } from "../types/jwt.types.js";
 config({
   path: "./.env",
 });
 
 export const verifyJwt = asyncHandler(
-  async (req: Request, res: Response, next: NextFunction) => {
+  async (req: CustomRequest, res: Response, next: NextFunction) => {
     try {
       const token =
         req.cookies?.accessToken ||
@@ -28,7 +29,7 @@ export const verifyJwt = asyncHandler(
       if (!user) {
         throw ApiError.Unauthorized();
       }
-      req.body.user = user;
+      req.user = user;
       next();
     } catch (error) {
       throw ApiError.Unauthorized();

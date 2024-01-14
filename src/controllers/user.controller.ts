@@ -19,6 +19,7 @@ import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 import mongoose from "mongoose";
 import { CustomRequest } from "../types/jwt.types.js";
+import HttpStatusCode from "utils/statusCode.js";
 
 const generateAccessAndRefreshToken = async (userId: string) => {
   try {
@@ -31,7 +32,7 @@ const generateAccessAndRefreshToken = async (userId: string) => {
   } catch (error) {
     throw new ApiError(
       "Something went wrong while creating access and refresh token",
-      500,
+      HttpStatusCode.INTERNAL_SERVER_ERROR,
       "ServerError"
     );
   }
@@ -49,7 +50,7 @@ const registerUser = asyncHandler(async (req: Request, res: Response) => {
   if (existedUser) {
     throw new ApiError(
       "User with email or username already exists",
-      409,
+      HttpStatusCode.CONFLICT,
       "Conflict"
     );
   }
@@ -62,12 +63,20 @@ const registerUser = asyncHandler(async (req: Request, res: Response) => {
     coverImageLocalPath = files?.coverImage[0].path;
   }
   if (!avatarLocalPath) {
-    throw new ApiError("Upload Avatar image", 400, "BadRequest");
+    throw new ApiError(
+      "Upload Avatar image",
+      HttpStatusCode.BAD_REQUEST,
+      "BadRequest"
+    );
   }
   const avatar = await uploadOnCloudinary(avatarLocalPath);
   const coverImage = await uploadOnCloudinary(coverImageLocalPath);
   if (!avatar) {
-    throw new ApiError("Avatar file is required", 400, "BadRequest");
+    throw new ApiError(
+      "Avatar file is required",
+      HttpStatusCode.BAD_REQUEST,
+      "BadRequest"
+    );
   }
 
   const user = await User.create({
@@ -88,8 +97,14 @@ const registerUser = asyncHandler(async (req: Request, res: Response) => {
   }
 
   return res
-    .status(201)
-    .json(new ApiResponse(200, userCreateDone, "User register successfully"));
+    .status(HttpStatusCode.CREATED)
+    .json(
+      new ApiResponse(
+        HttpStatusCode.OK,
+        userCreateDone,
+        "User register successfully"
+      )
+    );
 });
 
 const loginUser = asyncHandler(async (req: Request, res: Response) => {
@@ -97,16 +112,28 @@ const loginUser = asyncHandler(async (req: Request, res: Response) => {
     body: { username, password, email },
   } = await loginUserZodSchema.parseAsync(req);
   if (!email && !username) {
-    throw new ApiError("User name or Email required", 400, "BadRequest");
+    throw new ApiError(
+      "User name or Email required",
+      HttpStatusCode.BAD_REQUEST,
+      "BadRequest"
+    );
   }
 
   const user = await User.findOne({ $or: [{ username }, { email }] });
   if (!user) {
-    throw new ApiError("User does not exist", 404, "NotFound");
+    throw new ApiError(
+      "User does not exist",
+      HttpStatusCode.NOT_FOUND,
+      "NotFound"
+    );
   }
   const correctPassword = await user.isPasswordCorrect(password);
   if (!correctPassword) {
-    throw new ApiError("Invalid user credentials", 400, "BadRequest");
+    throw new ApiError(
+      "Invalid user credentials",
+      HttpStatusCode.BAD_REQUEST,
+      "BadRequest"
+    );
   }
   const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
     user._id
@@ -117,12 +144,12 @@ const loginUser = asyncHandler(async (req: Request, res: Response) => {
     secure: true,
   };
   return res
-    .status(200)
+    .status(HttpStatusCode.OK)
     .cookie("accessToken", accessToken, cookieOptions)
     .cookie("refreshToken", refreshToken, cookieOptions)
     .json(
       new ApiResponse(
-        200,
+        HttpStatusCode.OK,
         { accessToken, refreshToken },
         "User login Successfully"
       )
@@ -148,10 +175,10 @@ const logOutUser = asyncHandler(async (req: CustomRequest, res: Response) => {
   };
 
   return res
-    .status(200)
+    .status(HttpStatusCode.OK)
     .clearCookie("accessToken", options)
     .clearCookie("refreshToken", options)
-    .json(new ApiResponse(200, {}, "User logged Out"));
+    .json(new ApiResponse(HttpStatusCode.OK, {}, "User logged Out"));
 });
 
 const refreshAccessToken = asyncHandler(async (req: Request, res: Response) => {
@@ -183,12 +210,12 @@ const refreshAccessToken = asyncHandler(async (req: Request, res: Response) => {
     };
 
     return res
-      .status(200)
+      .status(HttpStatusCode.OK)
       .cookie("accessToken", accessToken, options)
       .cookie("refreshToken", refreshToken, options)
       .json(
         new ApiResponse(
-          200,
+          HttpStatusCode.OK,
           {
             accessToken,
             refreshToken,
@@ -209,22 +236,34 @@ const changeUserPassword = asyncHandler(
     const user = await User.findById(req.user._id);
     const isPasswordCorrect = await user.isPasswordCorrect(oldPassword);
     if (!isPasswordCorrect) {
-      throw new ApiError("Invalid old password", 400, "Invalid");
+      throw new ApiError(
+        "Invalid old password",
+        HttpStatusCode.BAD_REQUEST,
+        "Invalid"
+      );
     }
     user.password = newPassword;
     await user.save({ validateBeforeSave: false });
 
     return res
-      .status(200)
-      .json(new ApiResponse(200, {}, "Password Changed successfully"));
+      .status(HttpStatusCode.OK)
+      .json(
+        new ApiResponse(HttpStatusCode.OK, {}, "Password Changed successfully")
+      );
   }
 );
 
 const getCurrentUser = asyncHandler(
   async (req: CustomRequest, res: Response) => {
     return res
-      .status(200)
-      .json(new ApiResponse(200, req.user, "Current user fetch successfully"));
+      .status(HttpStatusCode.OK)
+      .json(
+        new ApiResponse(
+          HttpStatusCode.OK,
+          req.user,
+          "Current user fetch successfully"
+        )
+      );
   }
 );
 
@@ -239,8 +278,14 @@ const updateAccountDetails = asyncHandler(
       { new: true }
     ).select("-password -refreshToken");
     return res
-      .status(200)
-      .json(new ApiResponse(200, updatedUser, "User update successfully"));
+      .status(HttpStatusCode.OK)
+      .json(
+        new ApiResponse(
+          HttpStatusCode.OK,
+          updatedUser,
+          "User update successfully"
+        )
+      );
   }
 );
 
@@ -248,12 +293,20 @@ const updateUserAvatar = asyncHandler(
   async (req: CustomRequest, res: Response) => {
     const avatarLocalPath = req.file?.path;
     if (!avatarLocalPath) {
-      throw new ApiError("Avatar file missing", 400, "Bad request");
+      throw new ApiError(
+        "Avatar file missing",
+        HttpStatusCode.BAD_REQUEST,
+        "Bad request"
+      );
     }
     const avatar = await uploadOnCloudinary(avatarLocalPath);
 
     if (!avatar?.url) {
-      throw new ApiError("Error while uploading Avatar", 400, "Bad request");
+      throw new ApiError(
+        "Error while uploading Avatar",
+        HttpStatusCode.BAD_REQUEST,
+        "Bad request"
+      );
     }
 
     const updatedUser = await User.findOneAndUpdate(
@@ -266,8 +319,14 @@ const updateUserAvatar = asyncHandler(
       { new: true }
     ).select("-password -refreshToken");
     return res
-      .status(200)
-      .json(new ApiResponse(200, updatedUser, "User update successfully"));
+      .status(HttpStatusCode.OK)
+      .json(
+        new ApiResponse(
+          HttpStatusCode.OK,
+          updatedUser,
+          "User update successfully"
+        )
+      );
   }
 );
 
@@ -275,12 +334,20 @@ const updateUserCoverImage = asyncHandler(
   async (req: CustomRequest, res: Response) => {
     const coverImageLocalPath = req.file?.path;
     if (!coverImageLocalPath) {
-      throw new ApiError("Cover file missing", 400, "Bad request");
+      throw new ApiError(
+        "Cover file missing",
+        HttpStatusCode.BAD_REQUEST,
+        "Bad request"
+      );
     }
     const cover = await uploadOnCloudinary(coverImageLocalPath);
 
     if (!cover?.url) {
-      throw new ApiError("Error while uploading Cover", 400, "Bad request");
+      throw new ApiError(
+        "Error while uploading Cover",
+        HttpStatusCode.BAD_REQUEST,
+        "Bad request"
+      );
     }
     const oldCoverImage = req.user.coverImage;
     const deleteOldCover = await cloudinary.uploader.destroy(oldCoverImage);
@@ -295,8 +362,14 @@ const updateUserCoverImage = asyncHandler(
       { new: true }
     ).select("-password -refreshToken");
     return res
-      .status(200)
-      .json(new ApiResponse(200, updatedUser, "User update successfully"));
+      .status(HttpStatusCode.OK)
+      .json(
+        new ApiResponse(
+          HttpStatusCode.OK,
+          updatedUser,
+          "User update successfully"
+        )
+      );
   }
 );
 
@@ -359,13 +432,21 @@ const getUserChannelProfile = asyncHandler(
       },
     ]);
     if (!channel.length) {
-      throw new ApiError("Channel does not exist", 400, "Bad Request");
+      throw new ApiError(
+        "Channel does not exist",
+        HttpStatusCode.BAD_REQUEST,
+        "Bad Request"
+      );
     }
 
     return res
-      .status(200)
+      .status(HttpStatusCode.OK)
       .json(
-        new ApiResponse(200, channel[0], "User channel fetched successfully")
+        new ApiResponse(
+          HttpStatusCode.OK,
+          channel[0],
+          "User channel fetched successfully"
+        )
       );
   }
 );
@@ -415,9 +496,13 @@ const getWatchHistory = asyncHandler(
     ]);
 
     return res
-      .status(200)
+      .status(HttpStatusCode.OK)
       .json(
-        new ApiResponse(200, user[0].watchHistory, "Watch history fetched")
+        new ApiResponse(
+          HttpStatusCode.OK,
+          user[0].watchHistory,
+          "Watch history fetched"
+        )
       );
   }
 );

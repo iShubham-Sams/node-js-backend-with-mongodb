@@ -19,7 +19,7 @@ import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 import mongoose from "mongoose";
 import { CustomRequest } from "../types/jwt.types.js";
-import HttpStatusCode from "utils/statusCode.js";
+import HttpStatusCode from "../utils/statusCode.js";
 
 const generateAccessAndRefreshToken = async (userId: string) => {
   try {

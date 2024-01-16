@@ -65,12 +65,46 @@ const getUserTweets = asyncHandler(async (req: Request, res: Response) => {
   }
 });
 
-const updateTweet = asyncHandler(async (req, res) => {
-  //TODO: update tweet
+const updateTweet = asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const {
+      body: { content },
+    } = await createAndUpdateTweetZodSchema.parseAsync(req);
+    const tweetId = req.params.tweetId;
+    const tweet = await Tweet.findByIdAndUpdate(
+      tweetId,
+      { $set: { content } },
+      { new: true, useFindAndModify: false }
+    ).select("-_id -owner");
+    if (!tweet) {
+      throw new ApiError(
+        "Tweet id invalid",
+        HttpStatusCode.BAD_REQUEST,
+        "Bad request"
+      );
+    }
+
+    res.send(
+      new ApiResponse(HttpStatusCode.OK, {
+        message: "Tweet Update",
+        data: tweet,
+      })
+    );
+  } catch (error) {
+    res.send(
+      new ApiError(
+        "Tweet id invalid",
+        HttpStatusCode.BAD_REQUEST,
+        "Bad request"
+      )
+    );
+  }
 });
 
 const deleteTweet = asyncHandler(async (req, res) => {
-  //TODO: delete tweet
+  try {
+    const tweetId = req.params.tweetId;
+  } catch (error) {}
 });
 
 export { createTweet, getUserTweets, updateTweet, deleteTweet };

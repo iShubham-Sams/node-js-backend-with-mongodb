@@ -104,7 +104,29 @@ const updateTweet = asyncHandler(async (req: Request, res: Response) => {
 const deleteTweet = asyncHandler(async (req, res) => {
   try {
     const tweetId = req.params.tweetId;
-  } catch (error) {}
+    const tweet = await Tweet.findByIdAndDelete(tweetId);
+    if (!tweet) {
+      throw new ApiError(
+        "Tweet id invalid",
+        HttpStatusCode.BAD_REQUEST,
+        "Bad request"
+      );
+    }
+    res.send(
+      new ApiResponse(HttpStatusCode.OK, {
+        message: "Tweet delete successfully",
+        data: {},
+      })
+    );
+  } catch (error) {
+    res.send(
+      new ApiError(
+        "Tweet id invalid",
+        HttpStatusCode.BAD_REQUEST,
+        "Bad request"
+      )
+    );
+  }
 });
 
 export { createTweet, getUserTweets, updateTweet, deleteTweet };

@@ -62,6 +62,7 @@ const registerUser = asyncHandler(async (req: Request, res: Response) => {
   if (files && Array.isArray(files.coverImage) && files.coverImage.length > 0) {
     coverImageLocalPath = files?.coverImage[0].path;
   }
+  console.log(coverImageLocalPath);
   if (!avatarLocalPath) {
     throw new ApiError(
       "Upload Avatar image",

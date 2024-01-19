@@ -15,7 +15,7 @@ const toggleSubscription = asyncHandler(
       const userId = req.user._id;
       if (!isValidObjectId(channelId)) {
         throw new ApiError(
-          "Tweet id invalid",
+          "channel id invalid",
           HttpStatusCode.BAD_REQUEST,
           "Bad request"
         );
@@ -23,7 +23,7 @@ const toggleSubscription = asyncHandler(
       const channelExist = await User.findById(channelId);
       if (!channelExist) {
         new ApiError(
-          "Tweet id invalid",
+          "channel id invalid",
           HttpStatusCode.BAD_REQUEST,
           "Bad request"
         );
@@ -71,7 +71,73 @@ const getUserChannelSubscribers = asyncHandler(
 // controller to return channel list to which user has subscribed
 const getSubscribedChannels = asyncHandler(
   async (req: CustomRequest, res: Response) => {
-    const { subscriberId } = req.params;
+    try {
+      const { channelId } = req.params;
+      if (!isValidObjectId(channelId)) {
+        throw new ApiError(
+          "channel id invalid",
+          HttpStatusCode.BAD_REQUEST,
+          "Bad request"
+        );
+      }
+      const userExist = await User.findById(channelId);
+      if (!userExist) {
+        new ApiError(
+          "channel id invalid",
+          HttpStatusCode.BAD_REQUEST,
+          "Bad request"
+        );
+      }
+
+      const allSubscribeChannel = await Subscription.aggregate([
+        {
+          $match: {
+            subscriber: new mongoose.Types.ObjectId(channelId),
+          },
+        },
+        {
+          $lookup: {
+            from: "users",
+            foreignField: "_id",
+            localField: "channel",
+            as: "subscribedChannel",
+            pipeline: [
+              {
+                $project: {
+                  username: 1,
+                  fullName: 1,
+                  _id: 0,
+                },
+              },
+            ],
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            subscriber: 0,
+            channel: 0,
+            createdAt: 0,
+            updatedAt: 0,
+            __v: 0,
+          },
+        },
+      ]);
+      res.send(
+        new ApiResponse(HttpStatusCode.OK, {
+          message: "Channel subscribe",
+          data: { allSubscribeChannel },
+        })
+      );
+    } catch (error) {
+      res.send(
+        new ApiError(
+          "channel id invalid",
+          HttpStatusCode.BAD_REQUEST,
+          "Bad request"
+        )
+      );
+    }
   }
 );
 

@@ -351,7 +351,6 @@ const updateUserCoverImage = asyncHandler(
     }
     const oldCoverImage = req.user.coverImage;
     const deleteOldCover = await cloudinary.uploader.destroy(oldCoverImage);
-    console.log(deleteOldCover, "deleteOldCover");
     const updatedUser = await User.findOneAndUpdate(
       req.user._id,
       {

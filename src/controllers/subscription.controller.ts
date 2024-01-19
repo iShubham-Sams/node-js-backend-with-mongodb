@@ -64,7 +64,73 @@ const toggleSubscription = asyncHandler(
 // controller to return subscriber list of a channel
 const getUserChannelSubscribers = asyncHandler(
   async (req: CustomRequest, res: Response) => {
-    const { channelId } = req.params;
+    try {
+      const { subscriberId } = req.params;
+      if (!isValidObjectId(subscriberId)) {
+        throw new ApiError(
+          "channel id invalid",
+          HttpStatusCode.BAD_REQUEST,
+          "Bad request"
+        );
+      }
+      const channelExist = await User.findById(subscriberId);
+      if (!channelExist) {
+        new ApiError(
+          "channel id invalid",
+          HttpStatusCode.BAD_REQUEST,
+          "Bad request"
+        );
+      }
+
+      const allSubscriber = await Subscription.aggregate([
+        {
+          $match: {
+            channel: new mongoose.Types.ObjectId(subscriberId),
+          },
+        },
+        {
+          $lookup: {
+            from: "users",
+            foreignField: "_id",
+            localField: "subscriber",
+            as: "Subscriber",
+            pipeline: [
+              {
+                $project: {
+                  username: 1,
+                  fullName: 1,
+                  _id: 0,
+                },
+              },
+            ],
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            subscriber: 0,
+            channel: 0,
+            createdAt: 0,
+            updatedAt: 0,
+            __v: 0,
+          },
+        },
+      ]);
+      res.send(
+        new ApiResponse(HttpStatusCode.OK, {
+          message: "Channel subscribe",
+          data: { allSubscriber },
+        })
+      );
+    } catch (error) {
+      res.send(
+        new ApiError(
+          "channel id invalid",
+          HttpStatusCode.BAD_REQUEST,
+          "Bad request"
+        )
+      );
+    }
   }
 );
 

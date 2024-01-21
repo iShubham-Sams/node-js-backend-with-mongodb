@@ -9,6 +9,8 @@ import {
 } from "../controllers/video.controller.js";
 import { verifyJwt } from "../middlewares/auth.middleware.js";
 import { upload } from "../middlewares/multer.middleware.js";
+import zodValidate from "../middlewares/zodValidation.middleware.js";
+import { publishVideoZodSchema } from "../zodschema/video.zodSchema.js";
 
 const router = Router();
 router.use(verifyJwt); // Apply verifyJWT middleware to all routes in this file
@@ -27,6 +29,7 @@ router
         maxCount: 1,
       },
     ]),
+    zodValidate(publishVideoZodSchema),
     publishAVideo
   );
 

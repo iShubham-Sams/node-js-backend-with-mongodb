@@ -73,13 +73,11 @@ const publishAVideo = asyncHandler(
           "Bad request"
         );
       }
-      // TODO: get video, upload to cloudinary, create video
       res.send(
-        new ApiError(
-          "Video upload successfully",
-          HttpStatusCode.CREATED,
-          "Success"
-        )
+        new ApiResponse(HttpStatusCode.OK, {
+          message: "Video Created",
+          data: videoDone,
+        })
       );
     } catch (error) {
       res.send(
@@ -94,8 +92,40 @@ const publishAVideo = asyncHandler(
 );
 
 const getVideoById = asyncHandler(async (req, res) => {
-  const { videoId } = req.params;
-  //TODO: get video by id
+  try {
+    const { videoId } = req.params;
+    if (!isValidObjectId(videoId)) {
+      throw res.send(
+        new ApiError(
+          "Video id invalid",
+          HttpStatusCode.BAD_REQUEST,
+          "Bad request"
+        )
+      );
+    }
+    const video = await Video.findById(videoId).select("-_id -owner -__v");
+    if (!video) {
+      new ApiError(
+        "Video id invalid",
+        HttpStatusCode.BAD_REQUEST,
+        "Bad request"
+      );
+    }
+    res.send(
+      new ApiResponse(HttpStatusCode.OK, {
+        message: "Video fetch",
+        data: video,
+      })
+    );
+  } catch (error) {
+    res.send(
+      new ApiError(
+        "video id invalid",
+        HttpStatusCode.BAD_REQUEST,
+        "Bad request"
+      )
+    );
+  }
 });
 
 const updateVideo = asyncHandler(async (req, res) => {
